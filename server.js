@@ -1,8 +1,11 @@
 import http from "node:http";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import httpProxy from "http-proxy";
 
 const port = Number.parseInt(process.env.PORT || "10000", 10);
+const noVncRoot = process.env.NOVNC_ROOT || "/usr/share/novnc";
 const target = `http://127.0.0.1:${process.env.NOVNC_PORT || 6080}`;
 const username = process.env.BROWSER_AUTH_USER || "";
 const password = process.env.BROWSER_AUTH_PASSWORD || "";
@@ -37,17 +40,63 @@ function unauthorized(response) {
 }
 
 function checkNoVnc() {
-  return new Promise((resolve) => {
-    const request = http.get(`${target}/vnc.html`, { timeout: 2_000 }, (response) => {
-      response.resume();
-      resolve(response.statusCode >= 200 && response.statusCode < 500);
-    });
-    request.on("timeout", () => {
-      request.destroy();
-      resolve(false);
-    });
-    request.on("error", () => resolve(false));
+  return fs.existsSync(path.join(noVncRoot, "vnc.html"));
+}
+
+function safeNoVncPath(requestPath) {
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(requestPath || "/", "http://localhost").pathname);
+  } catch {
+    return null;
+  }
+  const relativePath = pathname === "/" ? "vnc.html" : pathname.replace(/^\/+/, "");
+  const absolutePath = path.resolve(noVncRoot, relativePath);
+  const root = path.resolve(noVncRoot);
+  const rootWithSeparator = `${root}${path.sep}`;
+  if (absolutePath !== root && !absolutePath.startsWith(rootWithSeparator)) {
+    return null;
+  }
+  return absolutePath;
+}
+
+const mimeTypes = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".gif", "image/gif"],
+  [".html", "text/html; charset=utf-8"],
+  [".ico", "image/x-icon"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".png", "image/png"],
+  [".svg", "image/svg+xml"],
+  [".woff", "font/woff"],
+  [".woff2", "font/woff2"],
+]);
+
+function serveNoVncAsset(request, response) {
+  const assetPath = safeNoVncPath(request.url);
+  if (!assetPath) {
+    response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Invalid asset path\n");
+    return true;
+  }
+
+  let stats;
+  try {
+    stats = fs.statSync(assetPath);
+  } catch {
+    return false;
+  }
+  if (!stats.isFile()) {
+    return false;
+  }
+
+  response.writeHead(200, {
+    "Cache-Control": "no-store",
+    "Content-Type": mimeTypes.get(path.extname(assetPath).toLowerCase()) || "application/octet-stream",
   });
+  fs.createReadStream(assetPath).on("error", () => response.destroy()).pipe(response);
+  return true;
 }
 
 function hasValidBasicAuth(request) {
@@ -120,13 +169,12 @@ proxy.on("error", proxyError);
 
 const server = http.createServer((request, response) => {
   if (request.url === "/health" || request.url?.startsWith("/health?")) {
-    checkNoVnc().then((ready) => {
-      response.writeHead(ready ? 200 : 503, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-      });
-      response.end(JSON.stringify({ ok: ready, service: "web-chrome-render" }));
+    const ready = checkNoVnc();
+    response.writeHead(ready ? 200 : 503, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
     });
+    response.end(JSON.stringify({ ok: ready, service: "web-chrome-render" }));
     return;
   }
 
@@ -140,6 +188,10 @@ const server = http.createServer((request, response) => {
   if (request.url === "/") {
     response.writeHead(302, { Location: "/vnc.html" });
     response.end();
+    return;
+  }
+
+  if (serveNoVncAsset(request, response)) {
     return;
   }
 
