@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: web-chrome-render
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: BROWSER_AUTH_USER
+        sync: false
+      - key: BROWSER_AUTH_PASSWORD
+        sync: false
