@@ -35,8 +35,32 @@ Render menetapkan `PORT` otomatis. Aplikasi mendengarkan pada `0.0.0.0` dan mema
 
 5. Tunggu build dan deploy selesai. Buka URL `https://<nama-service>.onrender.com`.
 6. Masukkan `BROWSER_AUTH_USER` dan `BROWSER_AUTH_PASSWORD` pada dialog login.
-7. noVNC akan tampil. Klik layar bila perlu, lalu gunakan Chrome seperti desktop biasa.
+7. noVNC akan tersambung otomatis dalam mode kontrol penuh dan memakai local scaling agar desktop menyesuaikan ukuran layar.
 8. Login Google dilakukan manual di dalam Chrome. Google dapat meminta verifikasi tambahan atau menolak login dari IP/data center Render.
+
+## Kontrol penuh di komputer dan HP
+
+Input VNC dikonfigurasi dengan `KMBC`: keyboard, gerakan mouse, klik/tombol mouse, dan clipboard VNC diizinkan. `View Only` tidak diaktifkan.
+
+- **Komputer:** klik canvas noVNC untuk memfokuskan keyboard; gunakan klik kiri/kanan, roda mouse, drag, dan shortcut seperti `Ctrl+C`, `Ctrl+V`, `Alt+Tab`, serta `Ctrl+Alt+Del` dari tombol Extra Keys.
+- **HP:** ketuk canvas untuk fokus, geser untuk menggerakkan pointer, tap untuk klik, tekan lama untuk klik kanan, dan gunakan pinch/scroll sesuai dukungan browser. Buka handle di sisi layar untuk menampilkan toolbar.
+- **Keyboard HP:** buka tombol keyboard pada toolbar noVNC untuk menampilkan keyboard virtual jika keyboard sistem tidak otomatis muncul.
+- **Fullscreen:** tekan tombol fullscreen pada toolbar setelah koneksi; browser mensyaratkan tindakan klik/tap pengguna.
+- **Scaling:** default `resize=scale` mengecilkan desktop 1280x800 agar terlihat pada layar HP. Ini adalah scaling lokal; ukuran display virtual tetap dan tidak meminta x11vnc melakukan remote resize.
+- **Toolbar:** panel Settings menyediakan Clipboard, Extra Keys, fullscreen, quality/compression, dan reconnect. Jangan mencentang `View Only` jika ingin mengetik atau mengklik.
+
+### Copy-paste
+
+Clipboard dua arah VNC diaktifkan melalui x11vnc `-input KMBC`. Pada Chrome/Edge desktop, izinkan clipboard ketika diminta dan klik canvas terlebih dahulu. Pada HP atau browser yang menolak akses clipboard otomatis:
+
+1. Buka toolbar noVNC.
+2. Buka panel **Clipboard**.
+3. Tempel teks dari perangkat ke panel tersebut, lalu kirim ke Chrome remote.
+4. Untuk menyalin teks keluar, salin dari Chrome remote ke panel Clipboard lalu gunakan tombol salin pada panel atau tekan lama teksnya.
+
+Clipboard native browser tetap tunduk pada HTTPS, izin browser, gesture pengguna, dan kebijakan OS. Teks ASCII paling konsisten melalui jalur x11vnc legacy; gunakan panel Clipboard untuk teks Unicode atau jika copy-paste otomatis tidak bekerja.
+
+> **Catatan resize:** pilih **Local Scaling**, bukan **Remote Resizing**. x11vnc mempertahankan display 1280x800 dan tidak menjamin dukungan SetDesktopSize dari noVNC.
 
 ## Pemulihan setelah sleep atau crash
 

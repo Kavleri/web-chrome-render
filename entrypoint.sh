@@ -77,6 +77,8 @@ VNC_ARGS=(
   -forever
   -shared
   -noxdamage
+  -xkb
+  -input KMBC
 )
 if [[ -n "${VNC_PASSWORD:-}" ]]; then
   VNC_ARGS+=( -passwd "${VNC_PASSWORD:0:8}" )

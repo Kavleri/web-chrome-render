@@ -6,7 +6,9 @@ import httpProxy from "http-proxy";
 
 const port = Number.parseInt(process.env.PORT || "10000", 10);
 const noVncRoot = process.env.NOVNC_ROOT || "/usr/share/novnc";
+const mobileCssPath = process.env.MOBILE_CSS_PATH || "/app/mobile.css";
 const target = `http://127.0.0.1:${process.env.NOVNC_PORT || 6080}`;
+const noVncEntry = "/vnc.html?autoconnect=1&resize=scale&view_only=0&view_clip=0&reconnect=1&reconnect_delay=5000&path=websockify";
 const username = process.env.BROWSER_AUTH_USER || "";
 const password = process.env.BROWSER_AUTH_PASSWORD || "";
 
@@ -35,6 +37,7 @@ function unauthorized(response) {
     "Content-Type": "text/plain; charset=utf-8",
     "WWW-Authenticate": 'Basic realm="Chrome desktop", charset="UTF-8"',
     "Cache-Control": "no-store",
+    "Permissions-Policy": "clipboard-read=(self), clipboard-write=(self)",
   });
   response.end("Authentication required\n");
 }
@@ -91,8 +94,32 @@ function serveNoVncAsset(request, response) {
     return false;
   }
 
+  if (assetPath === path.join(noVncRoot, "vnc.html")) {
+    fs.readFile(assetPath, "utf8", (error, html) => {
+      if (error) {
+        response.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+        response.end("Unable to load noVNC\n");
+        return;
+      }
+      const responsiveHtml = html.replace(
+        /<\/head>/i,
+        '    <link rel="stylesheet" href="/mobile.css">\n</head>',
+      );
+      response.writeHead(200, {
+        "Cache-Control": "no-store",
+        "Content-Security-Policy": "default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'",
+        "Permissions-Policy": "clipboard-read=(self), clipboard-write=(self)",
+        "Content-Type": "text/html; charset=utf-8",
+      });
+      response.end(responsiveHtml);
+    });
+    return true;
+  }
+
   response.writeHead(200, {
     "Cache-Control": "no-store",
+    "Content-Security-Policy": "default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-inline'",
+    "Permissions-Policy": "clipboard-read=(self), clipboard-write=(self)",
     "Content-Type": mimeTypes.get(path.extname(assetPath).toLowerCase()) || "application/octet-stream",
   });
   fs.createReadStream(assetPath).on("error", () => response.destroy()).pipe(response);
@@ -185,9 +212,32 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  if (request.url === "/") {
-    response.writeHead(302, { Location: "/vnc.html" });
+  if (request.url === "/" || request.url === "/vnc.html") {
+    response.writeHead(302, {
+      "Cache-Control": "no-store",
+      "Location": noVncEntry,
+      "Permissions-Policy": "clipboard-read=(self), clipboard-write=(self)",
+    });
     response.end();
+    return;
+  }
+
+  if (request.url === "/mobile.css") {
+    fs.createReadStream(mobileCssPath)
+      .on("error", () => {
+        if (!response.headersSent) {
+          response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+        }
+        response.end("Not found\n");
+      })
+      .on("open", () => {
+        response.writeHead(200, {
+          "Cache-Control": "no-store",
+          "Content-Type": "text/css; charset=utf-8",
+          "Permissions-Policy": "clipboard-read=(self), clipboard-write=(self)",
+        });
+      })
+      .pipe(response);
     return;
   }
 

@@ -35,7 +35,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund \
     && npm cache clean --force
 
-COPY server.js entrypoint.sh ./
+COPY server.js entrypoint.sh mobile.css ./
 RUN useradd --create-home --shell /usr/sbin/nologin browser \
     && chmod 0755 /app/entrypoint.sh \
     && chown -R browser:browser /app

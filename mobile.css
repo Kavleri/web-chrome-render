@@ -1,0 +1,68 @@
+/* Small touch-friendly adjustments layered on top of noVNC's own responsive UI. */
+html,
+body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#noVNC_container {
+  min-height: 100dvh;
+}
+
+#noVNC_control_bar_handle {
+  min-width: 34px;
+  min-height: 56px;
+}
+
+#noVNC_control_bar .noVNC_button {
+  min-width: 42px;
+  min-height: 42px;
+  padding: 7px;
+}
+
+#noVNC_control_bar .noVNC_button img {
+  max-width: 28px;
+  max-height: 28px;
+}
+
+.noVNC_panel {
+  max-width: min(92vw, 480px);
+  max-height: 82dvh;
+  overflow: auto;
+}
+
+.noVNC_panel input[type="text"],
+.noVNC_panel input[type="number"],
+.noVNC_panel input[type="password"],
+.noVNC_panel select,
+.noVNC_panel textarea {
+  max-width: 100%;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  #noVNC_control_bar_anchor {
+    transform: scale(0.92);
+    transform-origin: left center;
+  }
+
+  #noVNC_control_bar {
+    max-width: calc(100vw - 18px);
+  }
+
+  #noVNC_control_bar > .noVNC_scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .noVNC_panel {
+    left: 4vw;
+    right: 4vw;
+    width: auto;
+    max-width: none;
+  }
+
+  #noVNC_mobile_buttons {
+    display: flex;
+  }
+}
