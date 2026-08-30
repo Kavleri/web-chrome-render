@@ -35,6 +35,38 @@ if [[ "$display_ready" != true ]]; then
   exit 1
 fi
 
+mkdir -p "$HOME/.fluxbox"
+cat > "$HOME/.fluxbox/style" <<'EOF'
+background: solid
+background.color: #20242b
+toolbar: flat
+toolbar.color: #303640
+toolbar.height: 22
+toolbar.alpha: 255
+window.title.focus: flat
+window.title.focus.color: #3b4350
+window.title.unfocus: flat
+window.title.unfocus.color: #2d333c
+menu.title: flat
+menu.title.color: #3b4350
+menu.frame: flat
+menu.frame.color: #20242b
+EOF
+cat > "$HOME/.fluxbox/init" <<'EOF'
+session.screen0.toolbar.visible: true
+session.screen0.workspaceNames: Workspace 1
+session.screen0.fullMaximization: true
+session.screen0.defaultDeco: NORMAL
+session.screen0.iconbar.mode: Workspace
+session.screen0.focusModel: ClickFocus
+session.screen0.menuDelay: 0
+session.screen0.strftimeFormat: %H:%M
+session.screen0.windowPlacement: RowSmartPlacement
+session.screen0.rootCommand:
+session.screen0.menuFile: ~/.fluxbox/menu
+session.styleFile: ~/.fluxbox/style
+EOF
+
 fluxbox >/tmp/fluxbox.log 2>&1 &
 FLUXBOX_PID=$!
 
@@ -72,7 +104,6 @@ start_chrome() {
     --disable-dev-shm-usage \
     --disable-features=Translate,MediaRouter \
     --disable-gpu \
-    --no-sandbox \
     --window-size=1280,800 \
     about:blank \
     >/tmp/chrome.log 2>&1 &
